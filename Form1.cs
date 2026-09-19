@@ -7,6 +7,9 @@ namespace FuzzyLogic
 {
     public partial class Form1 : Form
     {
+        private PictureBox graphBox;
+        private double currentCrispSpeed = 0;
+
         private Label lblDistanceTitle, lblTrafficTitle, lblResult;
         private TrackBar tbDistance, tbTraffic;
         private Label lblDistanceValue, lblTrafficValue;
@@ -15,40 +18,49 @@ namespace FuzzyLogic
 
         public Form1()
         {
+            graphBox = new PictureBox();
+            // Moved further right (X: 550) and made slightly taller
+            graphBox.Size = new Size(400, 220);
+            graphBox.Location = new Point(550, 40);
+            graphBox.BackColor = Color.White;
+            graphBox.BorderStyle = BorderStyle.FixedSingle;
+            graphBox.Paint += DrawFuzzyGraph;
+            this.Controls.Add(graphBox);
+
             InitializeUI();
         }
 
         private void InitializeUI()
         {
-            // Form properties
+            // Widened the form from 650 to 1000
             this.Text = "CCLEX Toll Approach Pacing System - Fuzzy Logic Controller";
-            this.Size = new Size(650, 750);
+            this.Size = new Size(1000, 750);
             this.Font = new Font("Segoe UI", 10);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.WhiteSmoke;
 
-            // Distance Input
+            // Distance Input (Left Column)
             lblDistanceTitle = new Label { Text = "Distance to Toll Plaza (0 - 1000m):", Location = new Point(20, 20), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
             tbDistance = new TrackBar { Minimum = 0, Maximum = 1000, Value = 350, Location = new Point(20, 50), Width = 450, TickFrequency = 50, BackColor = Color.WhiteSmoke };
             lblDistanceValue = new Label { Text = "350 m", Location = new Point(480, 50), AutoSize = true, Font = new Font("Segoe UI", 11) };
             tbDistance.Scroll += (s, e) => { lblDistanceValue.Text = tbDistance.Value + " m"; CalculateFuzzyLogic(); };
 
-            // Traffic Input
+            // Traffic Input (Left Column)
             lblTrafficTitle = new Label { Text = "Traffic Density Ahead (0 - 100 vpm):", Location = new Point(20, 110), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
             tbTraffic = new TrackBar { Minimum = 0, Maximum = 100, Value = 75, Location = new Point(20, 140), Width = 450, TickFrequency = 10, BackColor = Color.WhiteSmoke };
             lblTrafficValue = new Label { Text = "75 vpm", Location = new Point(480, 140), AutoSize = true, Font = new Font("Segoe UI", 11) };
             tbTraffic.Scroll += (s, e) => { lblTrafficValue.Text = tbTraffic.Value + " vpm"; CalculateFuzzyLogic(); };
 
-            // Calculate Button (Also triggers on scroll now for live updates, but kept for UX)
-            btnCalculate = new Button { Text = "Run Mamdani Inference System", Location = new Point(20, 210), Width = 560, Height = 40, BackColor = Color.LightSteelBlue, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
+            // Calculate Button (Sized to fit left column)
+            btnCalculate = new Button { Text = "Run Mamdani Inference System", Location = new Point(20, 210), Width = 510, Height = 40, BackColor = Color.LightSteelBlue, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
             btnCalculate.Click += (s, e) => CalculateFuzzyLogic();
 
             // Defuzzified Output Label
             lblResult = new Label { Text = "Suggested Speed: -- km/h", Location = new Point(20, 270), AutoSize = true, Font = new Font("Segoe UI", 16, FontStyle.Bold), ForeColor = Color.DarkGreen };
 
-            // Diagnostics Log
+            // Diagnostics Log (Expanded to span the entire bottom width)
             Label lblLogTitle = new Label { Text = "System Execution Trace:", Location = new Point(20, 320), AutoSize = true, Font = new Font("Segoe UI", 9, FontStyle.Bold) };
-            rtbLog = new RichTextBox { Location = new Point(20, 345), Width = 560, Height = 340, ReadOnly = true, Font = new Font("Consolas", 9), BackColor = Color.White };
+            rtbLog = new RichTextBox { Location = new Point(20, 345), Width = 930, Height = 340, ReadOnly = true, Font = new Font("Consolas", 9), BackColor = Color.White };
 
             // Add Controls
             this.Controls.Add(lblDistanceTitle);
@@ -183,6 +195,58 @@ namespace FuzzyLogic
             // Scroll to top of log for easy reading
             rtbLog.SelectionStart = 0;
             rtbLog.ScrollToCaret();
+
+            currentCrispSpeed = finalSpeed;
+            graphBox.Invalidate();
+        }
+
+        private void DrawFuzzyGraph(object sender, PaintEventArgs e)
+        {
+            Graphics g = e.Graphics;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            int w = graphBox.Width;
+            int h = graphBox.Height;
+
+            // Draw the bottom X-Axis line
+            g.DrawLine(Pens.Gray, 0, h - 20, w, h - 20);
+
+            // Helper function to translate Speed (0-100) and Membership (0.0-1.0) into pixel coordinates
+            PointF GetPoint(double speed, double truth)
+            {
+                float px = (float)(speed / 100.0 * w);
+                float py = (float)(h - 20 - (truth * (h - 40)));
+                return new PointF(px, py);
+            }
+
+            // 1. Draw "Slow" Membership Function (Blue)
+            PointF[] slowPts = { GetPoint(0, 1), GetPoint(20, 1), GetPoint(40, 0) };
+            g.DrawLines(Pens.Blue, slowPts);
+            g.DrawString("Slow", this.Font, Brushes.Blue, GetPoint(5, 1.05));
+
+            // 2. Draw "Medium" Membership Function (Green)
+            PointF[] medPts = { GetPoint(20, 0), GetPoint(50, 1), GetPoint(80, 0) };
+            g.DrawLines(Pens.Green, medPts);
+            g.DrawString("Medium", this.Font, Brushes.Green, GetPoint(40, 1.05));
+
+            // 3. Draw "Fast" Membership Function (Orange)
+            PointF[] fastPts = { GetPoint(60, 0), GetPoint(80, 1), GetPoint(100, 1) };
+            g.DrawLines(Pens.Orange, fastPts);
+            g.DrawString("Fast", this.Font, Brushes.Orange, GetPoint(80, 1.05));
+
+            // 4. Draw the Crisp Output (Defuzzified Speed) as a Red Line
+            if (currentCrispSpeed > 0)
+            {
+                float lineX = (float)(currentCrispSpeed / 100.0 * w);
+                using (Pen redPen = new Pen(Color.Red, 2))
+                {
+                    g.DrawLine(redPen, lineX, 0, lineX, h - 20);
+                }
+
+                // Add a floating text label for the exact speed next to the red line
+                g.DrawString($"Final: {currentCrispSpeed:F1} km/h",
+                             new Font(this.Font, FontStyle.Bold),
+                             Brushes.Red, lineX + 5, 10);
+            }
         }
     }
 }
