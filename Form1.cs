@@ -248,18 +248,23 @@ namespace FuzzyLogic
             int w = pbOutput.Width; int h = pbOutput.Height;
             g.DrawLine(Pens.Gray, 0, h - 20, w, h - 20);
 
-            g.DrawLines(Pens.Blue, new[] { ScalePt(0, 100, 1, w, h), ScalePt(20, 100, 1, w, h), ScalePt(40, 100, 0, w, h) });
-            g.DrawString("Slow", this.Font, Brushes.Blue, ScalePt(5, 100, 1.05, w, h));
+            // Max speed is 80, so we scale out of 80 instead of 100
 
-            g.DrawLines(Pens.Green, new[] { ScalePt(20, 100, 0, w, h), ScalePt(50, 100, 1, w, h), ScalePt(80, 100, 0, w, h) });
-            g.DrawString("Coast", this.Font, Brushes.Green, ScalePt(40, 100, 1.05, w, h));
+            // Slow: Triangle (0, 0, 40) - Matches Trap(v, 0, 0, 0, 40)
+            g.DrawLines(Pens.Blue, new[] { ScalePt(0, 80, 1, w, h), ScalePt(0, 80, 1, w, h), ScalePt(40, 80, 0, w, h) });
+            g.DrawString("Slow", this.Font, Brushes.Blue, ScalePt(2, 80, 1.05, w, h));
 
-            g.DrawLines(Pens.Orange, new[] { ScalePt(60, 100, 0, w, h), ScalePt(80, 100, 1, w, h), ScalePt(100, 100, 1, w, h) });
-            g.DrawString("Cruise", this.Font, Brushes.Orange, ScalePt(80, 100, 1.05, w, h));
+            // Coast: Triangle (20, 40, 60) - Matches Trap(v, 20, 40, 40, 60)
+            g.DrawLines(Pens.Green, new[] { ScalePt(20, 80, 0, w, h), ScalePt(40, 80, 1, w, h), ScalePt(60, 80, 0, w, h) });
+            g.DrawString("Coast", this.Font, Brushes.Green, ScalePt(35, 80, 1.05, w, h));
+
+            // Cruise: Triangle (40, 80, 80) - Matches Trap(v, 40, 80, 80, 80)
+            g.DrawLines(Pens.Orange, new[] { ScalePt(40, 80, 0, w, h), ScalePt(80, 80, 1, w, h), ScalePt(80, 80, 1, w, h) });
+            g.DrawString("Cruise", this.Font, Brushes.Orange, ScalePt(65, 80, 1.05, w, h));
 
             if (currentCrispSpeed > 0)
             {
-                float lineX = ScalePt(currentCrispSpeed, 100, 0, w, h).X;
+                float lineX = ScalePt(currentCrispSpeed, 80, 0, w, h).X;
                 g.DrawLine(new Pen(Color.Red, 2), lineX, 0, lineX, h - 20);
                 g.DrawString($"Final: {currentCrispSpeed:F1} km/h", new Font(this.Font, FontStyle.Bold), Brushes.Red, lineX + 5, 10);
             }
