@@ -14,7 +14,7 @@ This repository contains a C# Windows Forms application that implements a Mamdan
 ### Output Variable
 | Variable | Universe of Discourse | Fuzzy Sets (Membership Functions) |
 | :--- | :--- | :--- |
-| **Suggested Speed** | 0 - 80 km/h | Slow (Trapezoidal), Coast (Triangular), Cruise (Trapezoidal) |
+| **Suggested Speed** | 0 - 80 km/h | Slow (Triangular), Coast (Triangular), Cruise (Triangular) |
 
 ### Fuzzy Rule Matrix
 The system utilizes a 9-rule base evaluated using the **MIN** operator for condition aggregation (AND). 
